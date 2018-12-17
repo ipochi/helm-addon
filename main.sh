@@ -79,7 +79,9 @@ installHelm() {
         done
           helm init --service-account tiller           
           ;;    
-      *) echo "invalid option '$type' , accepted inputs are 'tiller' ,'kube-system'";;
+      *) echo "invalid option '$type' , accepted inputs are 'tiller' ,'kube-system'"
+          exit 1
+          ;;
   esac
 }
 

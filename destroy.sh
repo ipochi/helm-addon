@@ -11,18 +11,18 @@ type=$1
   if [ -z "$type" ]; then
     echo "Provide namespace where tiller was installed, accepted input 'tiller' or 'kube-system'"
     echo "e.g : ./main.sh <namespace-name>"
-    exit
+    exit 1
   fi
 
 # checkHelmInstalledVersion checks which version of helm is installed 
 checkHelmInstalledVersion() {
   if  [ -x "${HELM_INSTALL_DIR}/${PROJECT_NAME}" ]; then
     local version=$(helm version -c | grep '^Client' | cut -d'"' -f2)
-    echo "Helm client ${version} found, proceeding with tiller installation."
+    echo "Helm client ${version} found, proceeding with tiller removal."
     return 0
   else
     echo "Helm client not found in $HELM_INSTALL_DIR Please check if it's installed"
-    echo "Installation steps can be found below. Re-run the install addon command again after helm client installation."
+    echo "Installation steps can be found below. Re-run the destroy addon command again after helm client installation."
     echo "
     curl https://raw.githubusercontent.com/helm/helm/master/scripts/get > get_helm.sh
     chmod 700 get_helm.sh
@@ -32,19 +32,12 @@ checkHelmInstalledVersion() {
 }
 
 # Install Helm
-installHelm() {
+helmReset() {
     # using the option passed by the user.
     case $type in
 
       "tiller")
-        echo "Installing Helm in tiller namespace"
-
-        # for file in $(find ./installation-type/ -type f -name "rbac-config.yaml" | sort) ; do
-        #   echo "add " $file
-        #   cat "$file" >> "$target"
-        #   echo " " >> "$target"
-        #   echo "---" >> "$target"
-        # done
+        echo "Removing tiller from '$type' namespace"
         helm reset --tiller-namespace $type
         if [ $? -ne 0 ]; then
           exit 1
@@ -58,18 +51,18 @@ installHelm() {
         done
           ;;
       "kube-system")
-        echo "Installing Helm in kube-system namespace"
+        echo "Removing tiller from '$type' namespace"
         helm reset   
         if [ $? -ne 0 ]; then
           exit 1
         fi   
 
-        for file in $(find ./installation-type/ -type f -name "rbac-config.yaml" | sort) ; do
-          echo "add " $file
-          cat "$file" >> "$target"
-          echo " " >> "$target"
-          echo "---" >> "$target"
-        done
+        # for file in $(find ./installation-type/ -type f -name "rbac-config.yaml" | sort) ; do
+        #   echo "add " $file
+        #   cat "$file" >> "$target"
+        #   echo " " >> "$target"
+        #   echo "---" >> "$target"
+        # done
 
         for file in $(find ./installation-type/kube-system -type f -name "*.yaml" | sort) ; do
           echo "add " $file
@@ -78,11 +71,13 @@ installHelm() {
           echo "---" >> "$target"
         done
           ;;    
-      *) echo "invalid option '$type' , accepted inputs are 'tiller' ,'kube-system'";;
+      *) echo "invalid option '$type' , accepted inputs are 'tiller' ,'kube-system'"
+          exit 1
+          ;;
   esac
 }
 
 #  Helm Installation
 if checkHelmInstalledVersion; then
-  installHelm
+  helmReset
 fi
